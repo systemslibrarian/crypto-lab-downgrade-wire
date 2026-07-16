@@ -189,39 +189,56 @@ body {
 
 /* ---- Flight track (the strip animation) ---- */
 .flight { margin: 0.2rem 0 0.4rem; }
+.flight-caption { margin: 0 0 0.3rem; font-size: 0.78rem; color: var(--text-dim); }
 .flight-track {
   position: relative;
-  height: 3.6rem;
-  border: 1px dashed var(--border);
+  height: 4.2rem;
+  border: 1px solid var(--border);
   border-radius: 10px;
   background-color: var(--surface-2);
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  padding: 0.35rem 0.6rem;
+  padding: 0.4rem 0.6rem;
   overflow: hidden;
 }
-.flight-tick { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.03em; color: var(--text-dim); }
+/* the wire the packet rides on */
+.flight-track::before {
+  content: '';
+  position: absolute;
+  left: 0.8rem;
+  right: 0.8rem;
+  top: 2.7rem;
+  border-top: 2px dashed var(--border);
+}
+.flight-tick {
+  position: absolute;
+  top: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--text-dim);
+}
+.flight-tick.tick-client { left: 0.6rem; }
+.flight-tick.tick-attacker { left: 50%; transform: translateX(-50%); }
+.flight-tick.tick-server { right: 0.6rem; }
 .flight-packet {
   position: absolute;
   left: 0.6rem;
-  top: 1.5rem;
-  max-width: 46%;
+  top: 2rem;
   transition: left 0.45s ease;
+  z-index: 1;
 }
-.flight-packet.at-attacker { left: calc(50% - 5rem); }
-.flight-packet.at-server { left: calc(100% - 10rem); }
+.flight-packet.at-attacker { left: calc(50% - 4.8rem); }
+.flight-packet.at-server { left: calc(100% - 9.8rem); }
 .flight-code {
   display: inline-block;
   background-color: var(--surface);
-  border: 1px solid var(--accent);
+  border: 1.5px solid var(--accent);
   border-radius: 6px;
-  padding: 0.15rem 0.4rem;
-  font-size: 0.72rem;
+  padding: 0.2rem 0.45rem;
+  font-size: 0.74rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 9.6rem;
+  max-width: 9.4rem;
   color: var(--text);
 }
 .flight-packet.snip .flight-code {

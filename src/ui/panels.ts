@@ -74,39 +74,43 @@ export function stripPanel(): HTMLElement {
   // deletes the hybrid codepoint mid-flight (the byte string visibly shrinks).
   // aria-hidden — it re-illustrates what the lanes and results already state in
   // text, so it adds nothing for a screen reader and is decorative to it.
-  const packetCode = h('code', { class: 'flight-code' });
+  const OFFER_HEX = toHex(encodeSupportedGroups(FULL_OFFER));
+  const packetCode = h('code', { class: 'flight-code', text: OFFER_HEX });
   const packet = h('div', { class: 'flight-packet' }, packetCode);
   const flight = h('div', { class: 'flight', attrs: { 'aria-hidden': 'true' } },
+    h('p', { class: 'flight-caption', text: 'The supported_groups bytes travel the wire; the attacker cuts the hybrid entry in transit. Press Run.' }),
     h('div', { class: 'flight-track' },
-      h('span', { class: 'flight-tick', text: 'Client' }),
-      h('span', { class: 'flight-tick', text: 'Attacker ✂' }),
-      h('span', { class: 'flight-tick', text: 'Server' }),
+      h('span', { class: 'flight-tick tick-client', text: 'Client' }),
+      h('span', { class: 'flight-tick tick-attacker', text: 'Attacker ✂' }),
+      h('span', { class: 'flight-tick tick-server', text: 'Server' }),
       packet,
     ),
   );
   const wait = (ms: number) => new Promise<void>((res) => setTimeout(res, ms));
 
-  function resetPacket(): void {
+  function restPacket(): void {
     packet.classList.remove('at-attacker', 'at-server', 'snip');
-    packetCode.textContent = '';
+    packetCode.textContent = OFFER_HEX;
   }
+  const resetPacket = restPacket;
 
   async function playFlight(): Promise<void> {
-    const sentList = FULL_OFFER.filter((id) => !stripped.has(id));
-    const fullHex = toHex(encodeSupportedGroups(FULL_OFFER));
-    const sentHex = toHex(encodeSupportedGroups(sentList));
+    const sentHex = toHex(encodeSupportedGroups(FULL_OFFER.filter((id) => !stripped.has(id))));
     const didStrip = stripped.size > 0;
     const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     packet.classList.remove('at-attacker', 'at-server', 'snip');
-    packetCode.textContent = fullHex;
-    if (reduce) { packetCode.textContent = sentHex; return; }
+    packetCode.textContent = OFFER_HEX;
+    if (reduce) { packetCode.textContent = didStrip ? sentHex : OFFER_HEX; return; }
     void packet.offsetWidth; // reflow so the transition starts at the client end
     packet.classList.add('at-attacker');
     await wait(470);
     if (didStrip) { packetCode.textContent = sentHex; packet.classList.add('snip'); }
     packet.classList.add('at-server');
-    await wait(470);
+    await wait(520);
+    // Drift back to the client rest state so the widget never idles as a lone
+    // chip stranded at the server. Non-blocking: results render immediately.
+    setTimeout(restPacket, 720);
   }
 
   function renderPacket(): void {
@@ -415,6 +419,7 @@ export function scopePanel(): HTMLElement {
         h('a', { attrs: { href: LABS.hybridWire, target: '_blank', rel: 'noopener' }, text: 'crypto-lab-hybrid-wire' }),
         '), the HKDF-Expand-Label key schedule, and the Finished MAC — all hand-rolled from the RFC and checked against RFC 8448 / RFC 7748 / RFC 5869 known-answer tests. When you strip the offer and run, a genuine handshake really does complete on the weaker suite, and the real Finished verifier really does abort it.'),
       h('p', {}, h('strong', { text: 'Simulated: ' }), 'the wire. There is no TCP, no real ServerHello parsing, no certificate or authentication step — the messages are modelled as just enough bytes for the transcript hash to be honest. The "Unbound" binding mode is a deliberately-broken counterfactual to show what TLS 1.3 prevents; it is never the default.'),
+      h('p', {}, h('strong', { text: 'Simplified: ' }), 'the abort is shown as the client rejecting the server’s Finished MAC. In a real TLS 1.3 stack the diverging transcript also changes the handshake traffic keys, so the mismatch usually surfaces one step earlier — the encrypted flight fails to decrypt. Either way the strip fails closed; this demo isolates the Finished MAC because that is the binding you can watch byte for byte.'),
       h('p', {}, h('strong', { text: 'Does NOT prove: ' }), 'that TLS 1.3 is downgrade-proof in general. It shows one property — that binding the transcript defeats a supported_groups strip — and shows two ways around that property (a fail-open retry, and simply never offering PQ). This is a teaching demo, not production crypto.'),
     ),
     h('h3', { text: 'Out of scope (by design)' }),
