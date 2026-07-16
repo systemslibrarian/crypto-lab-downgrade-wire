@@ -3,7 +3,7 @@ import { GROUPS, encodeSupportedGroups, type GroupId } from '../negotiation/grou
 import { runHandshake } from '../negotiation/handshake';
 import { simulateFailOpen, type RetryPolicy } from '../negotiation/failopen';
 import { checkSentinel, serverRandomTail } from '../negotiation/sentinel';
-import type { HandshakeConfig, Policy } from '../negotiation/types';
+import type { Policy } from '../negotiation/types';
 import { clear, h, panel } from './dom';
 import { LABS } from './links';
 import {
@@ -59,6 +59,20 @@ export function introPanel(): HTMLElement {
 
 // ── 2. The strip — headline mechanism + break-it-yourself ─────────────────────
 
+const HYBRID: GroupId = 'X25519MLKEM768';
+type BindingName = 'unbound' | 'bound';
+interface Scenario { strip: boolean; binding: BindingName; policy: Policy }
+
+function parseScenarioHash(): Scenario | null {
+  const m = /scenario=([a-z-]+)/.exec(typeof location === 'undefined' ? '' : location.hash);
+  if (!m) return null;
+  const [s, b, p] = m[1].split('-');
+  if (!['strip', 'clean'].includes(s) || !['bound', 'unbound'].includes(b) || !['preferred', 'required'].includes(p)) {
+    return null;
+  }
+  return { strip: s === 'strip', binding: b as BindingName, policy: p as Policy };
+}
+
 export function stripPanel(): HTMLElement {
   const stripped = new Set<GroupId>();
   let binding = true; // TLS 1.3 default
@@ -68,6 +82,23 @@ export function stripPanel(): HTMLElement {
   const attackerLane = h('div', { class: 'lane lane-attacker' });
   const serverLane = h('div', { class: 'lane lane-server' });
   const results = h('div', { class: 'strip-results', attrs: { 'aria-live': 'polite' } });
+  const compareOut = h('div', { class: 'compare-out', attrs: { 'aria-live': 'polite' } });
+
+  const bindingField = radioField('Transcript binding', 'binding', [
+    { value: 'unbound', label: 'Unbound (pre-TLS-1.3 model)', note: 'deliberately broken', checked: false },
+    { value: 'bound', label: 'TLS 1.3 (transcript-bound)', note: 'the real default', checked: true },
+  ], (v) => { binding = v === 'bound'; });
+  const policyField = radioField('Server policy', 'policy', [
+    { value: 'preferred', label: 'PQC preferred', checked: true },
+    { value: 'required', label: 'PQC required' },
+  ], (v) => { policy = v as Policy; });
+
+  function setRadio(field: HTMLElement, value: string): void {
+    const input = field.querySelector<HTMLInputElement>(`input[value="${value}"]`);
+    if (input) input.checked = true;
+  }
+  const copyBtn = h('button', { class: 'btn', text: 'Copy link', attrs: { type: 'button', id: 'strip-copylink' },
+    on: { click: () => void copyLink() } });
 
   // Purposeful, action-triggered animation of the strip itself: on Run, the
   // supported_groups bytes fly client → attacker → server, and the attacker
@@ -149,14 +180,14 @@ export function stripPanel(): HTMLElement {
   }
 
   async function run(): Promise<void> {
-    const config: HandshakeConfig = {
+    clear(compareOut);
+    const r = await runHandshake({
       clientOffer: FULL_OFFER,
       stripped: [...stripped],
       serverSupported: SERVER_SUPPORTED,
       transcriptBinding: binding,
       policy,
-    };
-    const r = await runHandshake(config);
+    });
     await playFlight();
 
     clear(serverLane);
@@ -183,25 +214,107 @@ export function stripPanel(): HTMLElement {
         ),
       );
     }
-    if (r.bothSidesSupportedPQ && r.negotiatedGroup === 'x25519') {
+    // Supporting copy gated on the ACTUAL outcome — never show the downgrade
+    // "aha" once the defense has caught the strip.
+    if (r.verdict === 'DOWNGRADE_ALARM') {
       results.append(
         h('p', { class: 'aha', text:
-          'Both endpoints support X25519MLKEM768. The wire agreed x25519. Under an unbound negotiation, neither side ever learns the stronger option was on the table.' }),
+          'Both endpoints support X25519MLKEM768. The wire agreed x25519, and with no transcript binding neither side ever learns the stronger option was on the table.' }),
+      );
+    } else if (r.verdict === 'DEFENSE_HELD') {
+      results.append(
+        h('p', { class: 'aha aha-ok', text:
+          'The strip reached the server, but the client’s Finished commits to the full offer it actually sent. The MACs disagree, so the handshake aborts before any data flows — the downgrade is caught, not completed.' }),
       );
     }
+  }
+
+  // Side-by-side: the same strip and policy under both bindings, one action —
+  // the comparative insight without making the user toggle, rerun, and remember.
+  async function compareBindings(): Promise<void> {
+    if (!stripped.has(HYBRID)) { stripped.add(HYBRID); renderPacket(); renderAttacker(); }
+    clear(results);
+    const base = {
+      clientOffer: FULL_OFFER,
+      stripped: [...stripped],
+      serverSupported: SERVER_SUPPORTED,
+      policy,
+    };
+    const [unbound, bound] = await Promise.all([
+      runHandshake({ ...base, transcriptBinding: false }),
+      runHandshake({ ...base, transcriptBinding: true }),
+    ]);
+    await playFlight();
+    clear(compareOut);
+    compareOut.append(
+      h('h3', { class: 'compare-title', text: `Same strip, same policy (PQC ${policy}), two worlds` }),
+      h('div', { class: 'compare-rail' },
+        ...[['Unbound (pre-TLS-1.3)', unbound], ['TLS 1.3 (transcript-bound)', bound]].map(([name, r]) =>
+          h('div', { class: 'compare-card' },
+            h('h4', { text: name as string }),
+            resultIndicator((r as Awaited<ReturnType<typeof runHandshake>>).crypto),
+            verdictIndicator((r as Awaited<ReturnType<typeof runHandshake>>).verdict),
+            h('p', { class: 'note', text: (r as Awaited<ReturnType<typeof runHandshake>>).consequence }),
+          ),
+        ),
+      ),
+    );
+  }
+
+  async function applyScenario(s: Scenario, mode: 'run' | 'compare'): Promise<void> {
+    stripped.clear();
+    if (s.strip) stripped.add(HYBRID);
+    binding = s.binding === 'bound';
+    policy = s.policy;
+    setRadio(bindingField, s.binding);
+    setRadio(policyField, s.policy);
+    renderPacket();
+    renderAttacker();
+    if (mode === 'compare') await compareBindings();
+    else await run();
+  }
+
+  function scenarioName(): string {
+    return `${stripped.has(HYBRID) ? 'strip' : 'clean'}-${binding ? 'bound' : 'unbound'}-${policy}`;
+  }
+  async function copyLink(): Promise<void> {
+    const url = `${location.origin}${location.pathname}#scenario=${scenarioName()}`;
+    const flash = (msg: string) => { copyBtn.textContent = msg; setTimeout(() => (copyBtn.textContent = 'Copy link'), 1600); };
+    try { await navigator.clipboard.writeText(url); flash('Link copied ✓'); }
+    catch { location.hash = `scenario=${scenarioName()}`; flash('Link in address bar'); }
   }
 
   renderPacket();
   renderAttacker();
 
+  // Deep link: if the page was opened with a #scenario=..., configure and play it
+  // once the panel is mounted, and bring it into view.
+  const initial = parseScenarioHash();
+  if (initial) {
+    requestAnimationFrame(() => {
+      document.getElementById('strip')?.scrollIntoView({ block: 'start' });
+      void applyScenario(initial, 'run');
+    });
+  }
+
   return panel('strip',
     h('h2', { text: 'Break it yourself: strip the offer' }),
     h('p', { class: 'panel-lede', text:
-      'This runs a real X25519 and real ML-KEM-768 key exchange (consumed from the hybrid-wire lab) and a hand-rolled TLS 1.3 Finished MAC. Delete the hybrid entry from the ClientHello, then run the handshake against the real verifier.' }),
-    h('ol', { class: 'guide' },
-      h('li', { text: 'Click ✕ on X25519MLKEM768 to strip it from the offer.' }),
-      h('li', { text: 'Switch binding to "Unbound" and run — the handshake completes on x25519. Success is the alarm.' }),
-      h('li', { text: 'Switch binding back to "TLS 1.3" and run the same strip — the handshake aborts. That is the defense.' }),
+      'A real X25519 + ML-KEM-768 key exchange (consumed from the hybrid-wire lab) and a hand-rolled TLS 1.3 Finished MAC. Watch the canonical downgrade in one click, or drive it yourself.' }),
+    h('div', { class: 'preset-row' },
+      h('button', { class: 'btn btn-primary btn-lg', text: '▶ Play the downgrade', attrs: { type: 'button', id: 'strip-play' },
+        on: { click: () => void applyScenario({ strip: true, binding: 'unbound', policy: 'preferred' }, 'run') } }),
+      h('button', { class: 'btn btn-lg', text: 'Compare unbound vs TLS 1.3', attrs: { type: 'button', id: 'strip-compare' },
+        on: { click: () => void compareBindings() } }),
+      copyBtn,
+    ),
+    h('details', { class: 'expert guide-details' },
+      h('summary', { text: 'Or drive it step by step' }),
+      h('ol', { class: 'guide' },
+        h('li', { text: 'Click ✕ on X25519MLKEM768 to strip it from the offer.' }),
+        h('li', { text: 'Switch binding to "Unbound" and run — the handshake completes on x25519. Success is the alarm.' }),
+        h('li', { text: 'Switch binding back to "TLS 1.3" and run the same strip — the handshake aborts. That is the defense.' }),
+      ),
     ),
     h('div', { class: 'wire' },
       h('div', { class: 'lane lane-client' },
@@ -216,21 +329,16 @@ export function stripPanel(): HTMLElement {
     ),
     flight,
     h('div', { class: 'controls' },
-      radioField('Transcript binding', 'binding', [
-        { value: 'unbound', label: 'Unbound (pre-TLS-1.3 model)', note: 'deliberately broken', checked: false },
-        { value: 'bound', label: 'TLS 1.3 (transcript-bound)', note: 'the real default', checked: true },
-      ], (v) => { binding = v === 'bound'; }),
-      radioField('Server policy', 'policy', [
-        { value: 'preferred', label: 'PQC preferred', checked: true },
-        { value: 'required', label: 'PQC required' },
-      ], (v) => { policy = v as Policy; }),
+      bindingField,
+      policyField,
       h('div', { class: 'btn-row' },
         h('button', { class: 'btn btn-primary', text: 'Run handshake', attrs: { type: 'button', id: 'strip-run' }, on: { click: () => void run() } }),
         h('button', { class: 'btn', text: 'Reset offer', attrs: { type: 'button', id: 'strip-reset' },
-          on: { click: () => { stripped.clear(); renderPacket(); renderAttacker(); resetPacket(); clear(serverLane); clear(results); } } }),
+          on: { click: () => { stripped.clear(); renderPacket(); renderAttacker(); resetPacket(); clear(serverLane); clear(results); clear(compareOut); } } }),
       ),
     ),
     results,
+    compareOut,
   );
 }
 

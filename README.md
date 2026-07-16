@@ -44,13 +44,15 @@ counterfactual used to show what TLS 1.3 prevents.
 1. **What is negotiation stripping?** — a plain-language, zero-math on-ramp: what
    the negotiation is, why it happens before authentication, and the one question
    that decides whether a strip works.
-2. **Break it yourself: strip the offer** — the headline interaction. Delete
-   `X25519MLKEM768` from a real ClientHello and press Run: the `supported_groups`
-   bytes fly down the wire and the attacker snips the hybrid entry mid-flight. Read
+2. **Break it yourself: strip the offer** — the headline interaction. Hit **▶ Play
+   the downgrade** for the canonical story in one click, or **Compare unbound vs
+   TLS 1.3** to see both worlds side by side from a single action, or drive it
+   manually: delete `X25519MLKEM768` and press Run, watching the `supported_groups`
+   bytes fly down the wire while the attacker snips the hybrid entry mid-flight. Read
    two separate indicators — the cryptographic result and the security verdict —
-   then toggle transcript binding **on** to watch the same strip abort, and expand
-   "Show the Finished MAC" for the causal chain: the stripped codepoint changes the
-   transcript hash, which changes the MAC, byte-diff highlighted at each stage.
+   and expand "Show the Finished MAC" for the causal chain: the stripped codepoint
+   changes the transcript hash, which changes the MAC, byte-diff highlighted at each
+   stage. **Copy link** deep-links any scenario (e.g. `#scenario=strip-bound-preferred`).
 3. **One config line: PQC preferred vs required** — the same strip under both server
    policies, side by side. Identical code; one setting turns a silent downgrade into
    a loud failure.
@@ -148,9 +150,14 @@ npm run test:a11y  # axe-core WCAG 2.1 A/AA gate (both themes)
   preferred-vs-required, and degenerate cases.
 - `src/negotiation/failopen.test.ts` — fail-closed vs fail-open retry outcomes.
 
+**Narrative-correctness gate:** `e2e/strip.spec.ts` (Playwright) asserts the copy
+that appears with each outcome — unbound-strip ⇒ `COMPLETED` + `DOWNGRADE — ALARM`,
+bound-strip ⇒ `ABORTED` + `DEFENSE HELD` with the downgrade "aha" *absent* — because
+in a teaching demo, the text next to a result is part of correctness.
+
 **Accessibility gate:** `@axe-core/playwright` scans the production build for zero
 WCAG 2.1 A/AA violations in **both** themes (`e2e/a11y.spec.ts`), and the GitHub
-Pages deploy is blocked if it fails.
+Pages deploy is blocked if it (or the narrative gate) fails.
 
 ## Performance
 

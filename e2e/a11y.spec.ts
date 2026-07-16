@@ -14,13 +14,16 @@ async function prepare(page: Page): Promise<void> {
     content: `*,*::before,*::after{animation:none!important;transition:none!important}`,
   });
 
-  // The strip: remove the hybrid group, run once bound (abort), once unbound (alarm).
-  await page.getByRole('button', { name: /Strip X25519MLKEM768/ }).click();
+  // The strip: one-click canonical downgrade (unbound → alarm + aha).
+  await page.locator('#strip-play').click();
+  await expect(page.locator('#strip .chip-alarm').first()).toBeVisible();
+  // Side-by-side compare rail (both verdict states rendered at once).
+  await page.locator('#strip-compare').click();
+  await expect(page.locator('#strip .compare-card')).toHaveCount(2);
+  // Bound run of the same strip → DEFENSE HELD chip + the green aha-ok note.
+  await page.locator('#binding-bound').check();
   await page.locator('#strip-run').click();
-  await expect(page.locator('#strip .chip')).toHaveCount(2); // result + verdict
-  await page.locator('#binding-unbound').check();
-  await page.locator('#strip-run').click();
-  await expect(page.locator('#strip .chip-alarm')).toBeVisible();
+  await expect(page.locator('#strip .aha-ok')).toBeVisible();
 
   // Policy side-by-side.
   await page.locator('#policy-run').click();
