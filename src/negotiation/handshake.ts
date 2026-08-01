@@ -47,8 +47,10 @@ async function makeClientShare(id: GroupId): Promise<ClientShare> {
     return { pub: x25519.publicKeyRaw, x25519, mlkem: null };
   }
   const mlkem = await generateMLKEMKeyPair();
-  // Hybrid client share: X25519 public key ‖ ML-KEM-768 encapsulation key.
-  return { pub: concatBytes(x25519.publicKeyRaw, mlkem.publicKey), x25519, mlkem };
+  // Hybrid client share: ML-KEM-768 encapsulation key ‖ X25519 public key.
+  // draft-kwiatkowski-tls-ecdhe-mlkem puts the ML-KEM part first for
+  // X25519MLKEM768 (and the ECDHE part first for SecP256r1MLKEM768).
+  return { pub: concatBytes(mlkem.publicKey, x25519.publicKeyRaw), x25519, mlkem };
 }
 
 async function makeClientShares(offer: GroupId[]): Promise<Map<GroupId, ClientShare>> {

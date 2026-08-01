@@ -69,7 +69,7 @@ export function encodeSupportedGroups(order: GroupId[]): Uint8Array {
 /**
  * Wire encoding of one key_share entry (RFC 8446 §4.2.8): the group's codepoint,
  * a uint16 length, then the key-exchange public bytes. For X25519MLKEM768 the
- * client share is the ~1.2 KB X25519 public key ‖ ML-KEM-768 encapsulation key —
+ * client share is the ~1.2 KB ML-KEM-768 encapsulation key ‖ X25519 public key —
  * so stripping the hybrid group deletes this whole block, not just two codepoint
  * bytes. (The exact hybrid share layout is the subject of crypto-lab-hybrid-wire.)
  */
