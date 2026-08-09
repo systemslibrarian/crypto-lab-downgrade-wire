@@ -223,6 +223,12 @@ export async function runHandshake(config: HandshakeConfig): Promise<HandshakeRe
       clientTranscriptHash: transcriptHash(clientView),
       serverTranscriptHash: transcriptHash(serverView),
       bytesStripped,
+      // What the attacker actually removed, in client preference order. Empty on
+      // a clean run — which is a state the UI must render, since a bound
+      // handshake always builds this record.
+      strippedLabels: clientSentList
+        .filter((g) => !serverReceivedList.includes(g))
+        .map((g) => GROUPS[g].label),
       serverFinishedSent,
       serverFinishedExpectedByClient,
       verified,

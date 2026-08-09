@@ -42,6 +42,14 @@ export interface FinishedEvidence {
   serverTranscriptHash: Uint8Array;
   /** Total ClientHello bytes the attacker deleted (codepoint + its key_share). */
   bytesStripped: number;
+  /**
+   * Labels of the groups the attacker actually deleted — EMPTY when it deleted
+   * nothing. The UI needs this to describe the deletion truthfully: a
+   * transcript-bound handshake produces a `FinishedEvidence` whether or not a
+   * strip happened, so neither "what was removed" nor "whether anything was"
+   * can be inferred from the presence of this record.
+   */
+  strippedLabels: string[];
   /** server Finished verify_data as sent, and as the client recomputed it. */
   serverFinishedSent: Uint8Array;
   serverFinishedExpectedByClient: Uint8Array;

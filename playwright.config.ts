@@ -5,6 +5,11 @@ const BASE = '/crypto-lab-downgrade-wire/';
 
 export default defineConfig({
   testDir: './e2e',
+  // The a11y gate drives ~24 states per configuration and runs a full axe pass
+  // plus an arithmetic contrast walk after every one, with a real ML-KEM-768
+  // encapsulation behind several of the clicks. The 30s default is not close;
+  // the a11y spec raises its own ceiling further with `test.setTimeout`.
+  timeout: 120_000,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,

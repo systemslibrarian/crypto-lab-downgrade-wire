@@ -10,6 +10,11 @@
   --surface: #1f0f16;
   --surface-2: #2b1620;
   --border: #4a2531;
+  /* Ink for a UI COMPONENT's boundary, as distinct from `--border`, which
+     divides one passive surface from another. SC 1.4.11 asks 3:1 of the first
+     and nothing of the second, and `--border` does not reach it: measured
+     against `--surface` it is 1.41:1. See the note on `.btn`. */
+  --border-strong: #9a6070;
   --text: #f7ebef;
   --text-dim: #d9bcc4;
   --accent-text: #ff92ab;
@@ -31,6 +36,7 @@ html[data-theme='light'] {
   --surface: #ffffff;
   --surface-2: #f5e7ea;
   --border: #e2c4cc;
+  --border-strong: #ad7888;
   --text: #241019;
   --text-dim: #6b4450;
   --accent-text: #9c123f;
@@ -90,7 +96,13 @@ body {
 .cl-hero-title{margin:0;font-size:clamp(1.6rem,3.8vw,2.7rem);font-weight:700;line-height:1.1;letter-spacing:.01em;}
 .cl-hero-sub{margin:.4rem 0 0;font-size:clamp(.9rem,1.6vw,1.05rem);letter-spacing:.01em;opacity:.85;}
 .cl-hero-desc{margin:.55rem 0 0;font-size:1rem;line-height:1.5;color:var(--text-dim);max-width:60ch;}
-.cl-hero-why{flex:0 1 min(40%,26rem);min-width:min(100%,15rem);border:1px solid var(--border);border-radius:10px;padding:.85rem 1.05rem;background:color-mix(in oklab,var(--accent) 6%,transparent);}
+/* border-box because the narrow-width rule below gives this box `width:100%`.
+   Nothing else in this stylesheet sets an explicit width on a padded box, so
+   the reset is scoped here rather than applied globally: under the default
+   content-box the 1.05rem side padding and 1px border are added OUTSIDE that
+   100%, which made the aside 384px inside a 348px column and pushed the whole
+   document to 400px of scroll width at a 380px viewport (WCAG 1.4.10). */
+.cl-hero-why{box-sizing:border-box;flex:0 1 min(40%,26rem);min-width:min(100%,15rem);border:1px solid var(--border);border-radius:10px;padding:.85rem 1.05rem;background:color-mix(in oklab,var(--accent) 6%,transparent);}
 .cl-hero-why-label{display:block;font-size:.68rem;font-weight:700;letter-spacing:.14em;}
 .cl-hero-why-text{margin:.35rem 0 0;font-size:.95rem;line-height:1.5;}
 @media (max-width:640px){.cl-hero{flex-direction:column;}.cl-hero-why{flex-basis:auto;width:100%;}.cl-hero-main{flex-basis:auto;min-width:0;}}
@@ -138,10 +150,20 @@ body {
 .mode-opt label { cursor: pointer; }
 .mode-note { color: var(--text-dim); font-style: italic; }
 .btn-row { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+/* A button's boundary is the only thing that says "this is a button" here, so
+   it has to carry SC 1.4.11's 3:1 on its own. `--surface-2` on `--surface` does
+   not come close — sampled from real screenshot pixels it is 1.09:1 in dark and
+   1.20:1 in light, a fill visually identical to the panel it sits on — and the
+   `--border` these buttons used to draw was 1.41:1 / 1.62:1, also under the
+   floor. `--border-strong` measures 3.76:1 (dark) and 3.63:1 (light) against
+   `--surface`. Do not swap it back for `--border`: this exact failure was
+   invisible to both oracles, because axe has no non-text-contrast rule and the
+   arithmetic walk only judges TEXT. It was found by sampling pixels, and the
+   stylesheet's own header had asserted "UI components >= 3:1" the whole time. */
 .btn {
   background-color: var(--surface-2);
   color: var(--text);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   padding: 0.5rem 0.9rem;
   cursor: pointer;
@@ -150,9 +172,14 @@ body {
 }
 .btn:hover { border-color: var(--accent-text); }
 .btn:disabled { cursor: not-allowed; color: var(--text-dim); }
+/* `--accent-strong` rather than `--accent` for the same reason: the accent fill
+   is 8.02:1 against the white light-theme panel but only 2.30:1 against the
+   dark one, so in dark the primary button had no 3:1 boundary either.
+   `--accent-strong` is 3.27:1 dark / 10.06:1 light, and it is also what
+   `:hover` paints, so the hovered state keeps a compliant edge. */
 .btn-primary {
   background-color: var(--accent);
-  border-color: var(--accent);
+  border-color: var(--accent-strong);
   color: var(--accent-ink);
   font-weight: 600;
 }

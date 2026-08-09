@@ -137,6 +137,37 @@ function connector(text: string): HTMLElement {
   );
 }
 
+/**
+ * Describe the deletion the attacker made, in terms of the bytes shown above it.
+ *
+ * This has to handle the CLEAN run, because a transcript-bound handshake builds
+ * a `FinishedEvidence` whether or not anything was stripped — the shipped
+ * default configuration (bound, unstripped) opens this very panel and there is
+ * nothing to report. It also must not name a group that was not the one
+ * removed: stripping only `x25519` is a reachable configuration.
+ *
+ * Both were wrong before. The line was a single unconditional sentence
+ * hardcoding X25519MLKEM768, so a clean run rendered "The attacker deleted 0
+ * bytes from the ClientHello: the 2-byte 11ec codepoint plus its -6-byte
+ * X25519MLKEM768 key_share" — a negative length, for a deletion that did not
+ * happen, naming a group that was still in the offer. The arithmetic is exact:
+ * each deleted group costs 2 bytes in supported_groups, and everything else is
+ * its key_share entry (a 4-byte header plus the public bytes).
+ */
+function deletionLine(f: FinishedEvidence): string {
+  const n = f.strippedLabels.length;
+  if (n === 0) {
+    return 'The attacker deleted nothing: the server received the ClientHello byte for byte, so both sides hash the same transcript.';
+  }
+  const codepointBytes = 2 * n;
+  return (
+    `The attacker deleted ${f.bytesStripped} bytes from the ClientHello: ` +
+    `the ${codepointBytes}-byte codepoint${n > 1 ? 's' : ''} for ` +
+    `${f.strippedLabels.join(' and ')} in supported_groups, plus the ` +
+    `${f.bytesStripped - codepointBytes} bytes of matching key_share.`
+  );
+}
+
 // The causal chain, shown not asserted (§2): the stripped codepoint propagates
 // through SHA-256 into the transcript hash and through HMAC into the Finished MAC.
 export function macDiff(f: FinishedEvidence): HTMLElement {
@@ -157,8 +188,7 @@ export function macDiff(f: FinishedEvidence): HTMLElement {
     h('p', { class: 'diff-stage-label', text: '1 · supported_groups on the wire' }),
     byteRegion('supported_groups the client sent (hybrid codepoint highlighted)', f.clientOfferHex, offerMark),
     byteRegion('supported_groups the server received', f.serverSawHex),
-    h('p', { class: 'diff-delete', text:
-      `The attacker deleted ${f.bytesStripped} bytes from the ClientHello: the 2-byte 11ec codepoint plus its ${f.bytesStripped - 6}-byte X25519MLKEM768 key_share.` }),
+    h('p', { class: 'diff-delete', text: deletionLine(f) }),
 
     connector('SHA-256 over the full ClientHello … ServerHello'),
     h('p', { class: 'diff-stage-label', text: '2 · Transcript-Hash' }),

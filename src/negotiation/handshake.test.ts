@@ -95,3 +95,34 @@ describe('degenerate cases', () => {
     expect(r.verdict).toBe('NO_CONNECTION');
   });
 });
+
+describe('FinishedEvidence.strippedLabels reports what was actually deleted', () => {
+  // A transcript-bound handshake builds a FinishedEvidence whether or not a
+  // strip happened, so the record's mere presence says nothing about what (or
+  // whether) anything was removed. The UI renders a sentence describing the
+  // deletion straight off these fields; before `strippedLabels` existed it
+  // hardcoded X25519MLKEM768 and derived the key_share length as
+  // `bytesStripped - 6`, which on a clean run printed a deletion of 0 bytes
+  // "plus its -6-byte X25519MLKEM768 key_share".
+  it('is empty, with zero bytes stripped, on a clean bound run', async () => {
+    const r = await runHandshake(cfg({ stripped: [], transcriptBinding: true }));
+    expect(r.finished).not.toBeNull();
+    expect(r.finished!.strippedLabels).toEqual([]);
+    expect(r.finished!.bytesStripped).toBe(0);
+    expect(r.finished!.verified).toBe(true);
+  });
+
+  it('names the hybrid group, and accounts for every deleted byte, when it is stripped', async () => {
+    const r = await runHandshake(cfg({ stripped: ['X25519MLKEM768'], transcriptBinding: true }));
+    expect(r.finished!.strippedLabels).toEqual(['X25519MLKEM768']);
+    // 2 bytes of codepoint in supported_groups; the rest is the key_share entry
+    // (a 4-byte header plus the hybrid public key), so the remainder is positive.
+    expect(r.finished!.bytesStripped - 2).toBeGreaterThan(0);
+  });
+
+  it('names x25519 — not the hybrid — when x25519 is the group removed', async () => {
+    const r = await runHandshake(cfg({ stripped: ['x25519'], transcriptBinding: true }));
+    expect(r.finished!.strippedLabels).toEqual(['x25519']);
+    expect(r.finished!.bytesStripped - 2).toBeGreaterThan(0);
+  });
+});
