@@ -77,7 +77,7 @@ export function groupChip(
       h('button', {
         class: 'pkt-remove',
         text: '✕',
-        attrs: { type: 'button', 'aria-label': `Strip ${g.label} from the ClientHello` },
+        attrs: { id: `strip-${id.toLowerCase()}`, type: 'button', 'aria-label': `Strip ${g.label} from the ClientHello` },
         on: { click: opts.onRemove },
       }),
     );
