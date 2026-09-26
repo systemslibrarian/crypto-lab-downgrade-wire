@@ -15,7 +15,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Interactive TLS 1.3 downgrade demo: strip X25519MLKEM768 from a ClientHello's supported_groups and watch transcript binding (the Finished MAC, RFC 8446) decide whether the strip succeeds."
+      content="Interactive TLS 1.3 downgrade demo: strip X25519MLKEM768 from a ClientHello's supported_groups and watch transcript binding (the Finished MAC, RFC 9846) decide whether the strip succeeds."
     />
     <link rel="icon" type="image/svg+xml"
       href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📉</text></svg>" />
@@ -130,7 +130,7 @@
       <header class="cl-hero">
         <div class="cl-hero-main">
           <h1 class="cl-hero-title">Downgrade Wire</h1>
-          <p class="cl-hero-sub">Negotiation stripping &amp; transcript binding · RFC 8446</p>
+          <p class="cl-hero-sub">Negotiation stripping &amp; transcript binding · RFC 9846</p>
           <p class="cl-hero-desc">Delete one line from a TLS ClientHello and watch two post-quantum-capable endpoints agree on classical-only X25519 — then turn the Finished MAC on and watch the same strip abort.</p>
         </div>
         <aside class="cl-hero-why" aria-label="Why it matters">

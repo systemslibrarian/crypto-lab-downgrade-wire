@@ -16,7 +16,7 @@ describe('NamedGroup codepoints (IANA TLS Supported Groups)', () => {
   });
 });
 
-describe('supported_groups wire encoding (RFC 8446 §4.2.7)', () => {
+describe('supported_groups wire encoding (RFC 9846 §4.3.7)', () => {
   it('encodes list length + big-endian codepoints', () => {
     // [X25519MLKEM768, x25519] → listLen=0x0004, 11ec, 001d
     expect(toHex(encodeSupportedGroups(['X25519MLKEM768', 'x25519']))).toBe('000411ec001d');

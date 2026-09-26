@@ -7,7 +7,7 @@ import {
   sentinelFor,
 } from './sentinel';
 
-describe('downgrade sentinel bytes (RFC 8446 §4.1.3)', () => {
+describe('downgrade sentinel bytes (RFC 9846 §4.2.3)', () => {
   it('TLS 1.2 sentinel is "DOWNGRD\\x01"', () => {
     expect(toHex(SENTINEL_TLS12)).toBe('444f574e47524401');
   });

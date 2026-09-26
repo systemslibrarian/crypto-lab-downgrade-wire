@@ -1,4 +1,4 @@
-// RFC 8446 §4.1.3 — the TLS 1.3 downgrade-protection sentinel.
+// RFC 9846 §4.2.3 — the TLS 1.3 downgrade-protection sentinel.
 //
 // A TLS 1.3-capable server that ends up negotiating an older version MUST write a
 // fixed 8-byte string into the last 8 bytes of ServerHello.random. A TLS 1.3

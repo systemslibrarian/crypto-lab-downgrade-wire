@@ -1,6 +1,6 @@
 # Downgrade Wire
 
-**Negotiation stripping & transcript binding · RFC 8446**
+**Negotiation stripping & transcript binding · RFC 9846**
 
 An interactive, in-browser demo of a TLS 1.3 downgrade: two endpoints that both
 support the post-quantum group `X25519MLKEM768` end up agreeing on bare `x25519`,
@@ -23,8 +23,8 @@ This lab builds that negotiation and one real defense against tampering with it:
   a real shared key is derived.
 - **Real transcript binding, hand-rolled.** The TLS 1.3 key schedule
   (`HKDF-Extract` / `HKDF-Expand-Label` / `Derive-Secret`) and the Finished MAC
-  (`HMAC(finished_key, Transcript-Hash(...))`) are implemented from RFC 8446 §7.1 /
-  §4.4.4. The construction is reproduced **byte-for-byte against the RFC 8448
+  (`HMAC(finished_key, Transcript-Hash(...))`) are implemented from RFC 9846 §7.1 /
+  §4.5.3. The construction is reproduced **byte-for-byte against the RFC 8448
   client Finished trace**, and its primitives against RFC 5869, RFC 4231, and
   FIPS 180-4 known-answer tests. This is the teaching subject, so it is written out
   in the open, not hidden in a library. The modelled ClientHello carries a real
@@ -56,7 +56,7 @@ counterfactual used to show what TLS 1.3 prevents.
 3. **One config line: PQC preferred vs required** — the same strip under both server
    policies, side by side. Identical code; one setting turns a silent downgrade into
    a loud failure.
-4. **The weaker cousin: the downgrade sentinel** — RFC 8446 §4.1.3's `DOWNGRD`
+4. **The weaker cousin: the downgrade sentinel** — RFC 9846 §4.2.3's `DOWNGRD`
    magic bytes in `ServerHello.random`, and why a sentinel is weaker than transcript
    binding (narrow scope, opt-in check, single field).
 5. **Downgrade by denial of service** — transcript binding makes the strip fail
@@ -102,11 +102,11 @@ the real key exchange and the real Finished verifier in your browser.
 
 ## Real-World Usage
 
-TLS 1.3 (RFC 8446) is the negotiation and transcript binding modeled here; it is
+TLS 1.3 (RFC 9846) is the negotiation and transcript binding modeled here; it is
 what protects the vast majority of HTTPS traffic. `X25519MLKEM768`
 (draft-kwiatkowski-tls-ecdhe-mlkem, IANA NamedGroup `0x11EC`) is the hybrid
 post-quantum group now being deployed across browsers and CDNs. The downgrade
-sentinel (RFC 8446 §4.1.3) ships in every TLS 1.3 stack. The historical attacks —
+sentinel (RFC 9846 §4.2.3) ships in every TLS 1.3 stack. The historical attacks —
 FREAK, Logjam, POODLE — are why this binding exists.
 
 ## How to Run Locally
@@ -136,10 +136,10 @@ npm run test:a11y  # axe-core WCAG 2.1 A/AA gate (both themes)
   verify_data reproduced byte-for-byte** from that trace's `finished_key` and
   transcript hash; and HMAC-SHA256 / SHA-256 against **RFC 4231** and **FIPS 180-4**.
 - `src/negotiation/sentinel.test.ts` — the `DOWNGRD\x01` / `DOWNGRD\x00` sentinel
-  bytes from **RFC 8446 §4.1.3**.
+  bytes from **RFC 9846 §4.2.3**.
 - `src/negotiation/groups.test.ts` — the IANA NamedGroup codepoints
   (`X25519MLKEM768 = 0x11EC`, `x25519 = 0x001D`) and the `supported_groups` wire
-  encoding (RFC 8446 §4.2.7).
+  encoding (RFC 9846 §4.3.7).
 - `src/kex/kex.test.ts` — X25519 against the **RFC 7748 §5.2** vectors, ML-KEM-768
   (FIPS 203) encaps/decaps round-trip and sizes, and a **deterministic seeded
   ML-KEM-768 KAT** pinning the exact parameter set — proving the consumed KEX is

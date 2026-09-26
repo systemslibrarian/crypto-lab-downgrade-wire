@@ -2,7 +2,7 @@
 //
 // Codepoints are the real IANA "TLS Supported Groups" values, so the wire bytes
 // shown in the demo are the bytes a real ClientHello would carry.
-//   x25519          = 0x001D   (RFC 7748 / RFC 8446)
+//   x25519          = 0x001D   (RFC 7748 / RFC 9846)
 //   X25519MLKEM768  = 0x11EC   (draft-kwiatkowski-tls-ecdhe-mlkem, IANA 4588)
 //   secp256r1       = 0x0017   (kept only for the historical rollback panel)
 
@@ -52,7 +52,7 @@ export function codepointHex(id: GroupId): string {
 
 /**
  * Wire encoding of the supported_groups extension body: a uint16 list length
- * followed by each group's uint16 codepoint (RFC 8446 §4.2.7). This is the exact
+ * followed by each group's uint16 codepoint (RFC 9846 §4.3.7). This is the exact
  * byte sequence the attacker edits, and it feeds the transcript hash — so the
  * strip is visible in the bytes the Finished MAC commits to.
  */
@@ -67,7 +67,7 @@ export function encodeSupportedGroups(order: GroupId[]): Uint8Array {
 }
 
 /**
- * Wire encoding of one key_share entry (RFC 8446 §4.2.8): the group's codepoint,
+ * Wire encoding of one key_share entry (RFC 9846 §4.3.8): the group's codepoint,
  * a uint16 length, then the key-exchange public bytes. For X25519MLKEM768 the
  * client share is the ~1.2 KB ML-KEM-768 encapsulation key ‖ X25519 public key —
  * so stripping the hybrid group deletes this whole block, not just two codepoint

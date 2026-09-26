@@ -382,7 +382,7 @@ export function policyPanel(): HTMLElement {
   );
 }
 
-// ── 4. Downgrade sentinel — RFC 8446 §4.1.3 ──────────────────────────────────
+// ── 4. Downgrade sentinel — RFC 9846 §4.2.3 ──────────────────────────────────
 
 export function sentinelPanel(): HTMLElement {
   let writeSentinel = true;
@@ -423,7 +423,7 @@ export function sentinelPanel(): HTMLElement {
   return panel('sentinel',
     h('h2', { text: 'The weaker cousin: the downgrade sentinel' }),
     h('p', { class: 'panel-lede' },
-      'RFC 8446 §4.1.3 gives TLS 1.3 a second, narrower defense against ',
+      'RFC 9846 §4.2.3 gives TLS 1.3 a second, narrower defense against ',
       h('em', { text: 'version' }),
       ' rollback: a 1.3-capable server that negotiates an older version writes the ASCII string ',
       h('code', { class: 'inline-hex', text: '44 4f 57 4e 47 52 44 01' }),
@@ -503,7 +503,7 @@ export function historicalPanel(): HTMLElement {
     h('div', { class: 'hist-grid' },
       card('FREAK', '2015', 'Forced clients to accept deliberately-weak 512-bit "export-grade" RSA key exchange that both sides could otherwise avoid. The strong option was stripped; the export option was factorable in hours.'),
       card('Logjam', '2015', 'The Diffie–Hellman version of FREAK: downgraded the connection to export-grade 512-bit DH groups, whose parameters were precomputable. Same negotiation-before-authentication gap.'),
-      card('POODLE', '2014', 'Forced a rollback from TLS to SSL 3.0, whose CBC padding could be exploited byte by byte. This is the version-rollback threat the RFC 8446 sentinel was written to answer.'),
+      card('POODLE', '2014', 'Forced a rollback from TLS to SSL 3.0, whose CBC padding could be exploited byte by byte. This is the version-rollback threat the RFC 9846 sentinel was written to answer.'),
     ),
     h('p', { class: 'honesty', text:
       'X25519MLKEM768 is the strong option today, and "harvest now, decrypt later" is the export-grade RSA of the quantum era — recorded traffic that only needs the attacker to wait. The defense is the same one TLS 1.3 already ships: bind the transcript.' }),

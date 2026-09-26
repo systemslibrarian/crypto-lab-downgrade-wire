@@ -5,7 +5,7 @@
 // the key schedule, and the Finished MAC — is spelled out here so a learner can
 // read exactly how "the agreed key depends on everything that was said."
 //
-// References: RFC 8446 §7.1 (key schedule), §4.4.4 (Finished), §7.3;
+// References: RFC 9846 §7.1 (key schedule), §4.5.3 (Finished), §7.3;
 //             RFC 5869 (HKDF). KATs live in transcript.test.ts (RFC 8448).
 // ─────────────────────────────────────────────────────────────────────────────
 import { hmac } from '@noble/hashes/hmac.js';
@@ -32,7 +32,7 @@ export function hkdfExpand(prk: Uint8Array, info: Uint8Array, length: number): U
 }
 
 /**
- * RFC 8446 §7.1 HKDF-Expand-Label. The label is prefixed with "tls13 " and the
+ * RFC 9846 §7.1 HKDF-Expand-Label. The label is prefixed with "tls13 " and the
  * context is length-prefixed, so two derivations that share a secret but differ
  * in label or context produce independent keys.
  *
@@ -55,7 +55,7 @@ export function hkdfExpandLabel(
   return hkdfExpand(secret, hkdfLabel, length);
 }
 
-/** RFC 8446 §7.1 Derive-Secret(Secret, Label, Messages). */
+/** RFC 9846 §7.1 Derive-Secret(Secret, Label, Messages). */
 export function deriveSecret(secret: Uint8Array, label: string, transcript: Uint8Array): Uint8Array {
   return hkdfExpandLabel(secret, label, sha256(transcript), HASH_LEN);
 }
@@ -65,7 +65,7 @@ export function transcriptHash(messages: Uint8Array[]): Uint8Array {
   return sha256(concatBytes(...messages));
 }
 
-// ── Key schedule (RFC 8446 §7.1) ─────────────────────────────────────────────
+// ── Key schedule (RFC 9846 §7.1) ─────────────────────────────────────────────
 // Enough of the schedule to reach the handshake traffic secrets that key the
 // Finished MACs. PSK path is unused here (no resumption), so Early Secret takes a
 // zero PSK, exactly as a fresh full handshake does.
@@ -95,12 +95,12 @@ export function deriveHandshakeSecrets(sharedSecret: Uint8Array, chToSh: Uint8Ar
   };
 }
 
-/** RFC 8446 §4.4.4: finished_key = HKDF-Expand-Label(BaseKey, "finished", "", Hash.length). */
+/** RFC 9846 §4.5.3: finished_key = HKDF-Expand-Label(BaseKey, "finished", "", Hash.length). */
 export function deriveFinishedKey(baseKey: Uint8Array): Uint8Array {
   return hkdfExpandLabel(baseKey, 'finished', new Uint8Array(0), HASH_LEN);
 }
 
-/** RFC 8446 §4.4.4: verify_data = HMAC(finished_key, transcript_hash). */
+/** RFC 9846 §4.5.3: verify_data = HMAC(finished_key, transcript_hash). */
 export function finishedMacFromTranscriptHash(
   finishedKey: Uint8Array,
   th: Uint8Array,
@@ -109,7 +109,7 @@ export function finishedMacFromTranscriptHash(
 }
 
 /**
- * RFC 8446 §4.4.4: verify_data = HMAC(finished_key, Transcript-Hash(messages)).
+ * RFC 9846 §4.5.3: verify_data = HMAC(finished_key, Transcript-Hash(messages)).
  * The Finished commits the sender to every byte in `messages`; the receiver
  * recomputes it over the messages IT saw. When those views differ (a strip),
  * the two MACs cannot match — that is transcript binding.
