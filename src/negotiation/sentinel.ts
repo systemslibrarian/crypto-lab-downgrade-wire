@@ -1,8 +1,13 @@
 // RFC 9846 §4.2.3 — the TLS 1.3 downgrade-protection sentinel.
 //
-// A TLS 1.3-capable server that ends up negotiating an older version MUST write a
+// A TLS 1.3-capable server that ends up negotiating TLS 1.2 MUST write a
 // fixed 8-byte string into the last 8 bytes of ServerHello.random. A TLS 1.3
 // client that sees it knows an active attacker forced the version down and aborts.
+//
+// TLS 1.0/1.1 negotiation is forbidden by RFC 9846 Appendix E.5. The 00 marker
+// remains defined for legacy peers that violate that prohibition, and clients
+// must still recognize it. Appendix E.2 erratum 9040, verified 2026-10-12:
+// https://mailarchive.ietf.org/arch/msg/tls/64QSoLupbDHGReyyeeWg6F9ihTg/
 //
 // This is a WEAKER defense than transcript binding, for reasons the panel shows:
 //   • it only signals VERSION rollback (1.3→1.2/1.1), not group/suite stripping;
@@ -17,12 +22,13 @@ const DOWNGRD = new Uint8Array([0x44, 0x4f, 0x57, 0x4e, 0x47, 0x52, 0x44]);
 
 /** Sentinel written when a TLS 1.3 server negotiates TLS 1.2. */
 export const SENTINEL_TLS12 = new Uint8Array([...DOWNGRD, 0x01]);
-/** Sentinel written when a TLS 1.3 server negotiates TLS 1.1 or below. */
+/** Legacy marker for a server that improperly negotiates TLS 1.1 or below. */
 export const SENTINEL_TLS11_OR_BELOW = new Uint8Array([...DOWNGRD, 0x00]);
 
+/** Includes TLS1.1- only to model legacy, noncompliant peer behavior. */
 export type NegotiatedVersion = 'TLS1.3' | 'TLS1.2' | 'TLS1.1-';
 
-/** The 8 sentinel bytes a spec-compliant server writes for a negotiated version. */
+/** Sentinel-byte model, not a negotiation policy: TLS1.1- is a legacy example. */
 export function sentinelFor(version: NegotiatedVersion): Uint8Array | null {
   if (version === 'TLS1.2') return SENTINEL_TLS12;
   if (version === 'TLS1.1-') return SENTINEL_TLS11_OR_BELOW;
@@ -35,8 +41,9 @@ export interface ServerRandom {
 }
 
 /**
- * Build the last 8 bytes of ServerHello.random. A compliant server writes the
- * sentinel; a `writeSentinel: false` server (the deliberately-broken variant)
+ * Build the last 8 bytes of ServerHello.random for the modeled version.
+ * Writing the marker does not make TLS1.1- negotiation compliant. For TLS1.2,
+ * a compliant TLS 1.3-capable server writes the sentinel; a `writeSentinel: false` server (the deliberately-broken variant)
  * leaves random bytes there, which is what makes the rollback undetectable.
  */
 export function serverRandomTail(

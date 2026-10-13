@@ -136,7 +136,7 @@ npm run test:a11y  # axe-core WCAG 2.1 A/AA gate (both themes)
   verify_data reproduced byte-for-byte** from that trace's `finished_key` and
   transcript hash; and HMAC-SHA256 / SHA-256 against **RFC 4231** and **FIPS 180-4**.
 - `src/negotiation/sentinel.test.ts` — the `DOWNGRD\x01` / `DOWNGRD\x00` sentinel
-  bytes from **RFC 9846 §4.2.3**.
+  bytes from **RFC 9846 §4.2.3**. The `00` case models legacy, noncompliant TLS 1.1-or-earlier negotiation; it remains recognizable by clients. [Erratum 9040](https://mailarchive.ietf.org/arch/msg/tls/64QSoLupbDHGReyyeeWg6F9ihTg/), verified 12 October 2026, corrects Appendix E.2 to reject versions below TLS 1.2. The visible demo negotiates TLS 1.2.
 - `src/negotiation/groups.test.ts` — the IANA NamedGroup codepoints
   (`X25519MLKEM768 = 0x11EC`, `x25519 = 0x001D`) and the `supported_groups` wire
   encoding (RFC 9846 §4.3.7).

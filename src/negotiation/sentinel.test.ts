@@ -12,8 +12,12 @@ describe('downgrade sentinel bytes (RFC 9846 §4.2.3)', () => {
     expect(toHex(SENTINEL_TLS12)).toBe('444f574e47524401');
   });
 
-  it('TLS 1.1-or-below sentinel is "DOWNGRD\\x00"', () => {
+  it('legacy noncompliant TLS 1.1-or-below sentinel is "DOWNGRD\\x00"', () => {
     expect(toHex(SENTINEL_TLS11_OR_BELOW)).toBe('444f574e47524400');
+    // Prohibited negotiation does not remove the client's legacy marker check.
+    expect(sentinelFor('TLS1.1-')).toEqual(SENTINEL_TLS11_OR_BELOW);
+    expect(checkSentinel(SENTINEL_TLS11_OR_BELOW, true)).toEqual({ detected: true, version: 'TLS1.1-' });
+    expect(checkSentinel(SENTINEL_TLS11_OR_BELOW, false)).toEqual({ detected: false });
   });
 
   it('a TLS 1.3 negotiation writes no sentinel', () => {
