@@ -447,3 +447,6 @@ body {
   font-style: italic;
 }
 .scripture-footer p { margin: 0; }
+
+/* The strip mark, drawn here rather than written as DOM text. */
+.pkt-remove::before { content: "\2715"; }

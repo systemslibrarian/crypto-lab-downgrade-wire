@@ -74,9 +74,13 @@ export function groupChip(
   );
   if (opts.removable && opts.onRemove) {
     chip.append(
+      // The mark is drawn from CSS, not written as text. axe 4.14 compares a
+      // control's accessible name against everything a SIGHTED user sees
+      // (label-content-name-mismatch, WCAG 2.5.3 Label in Name) while
+      // excluding aria-hidden content from the NAME, so an aria-hidden glyph
+      // would not satisfy it either.
       h('button', {
         class: 'pkt-remove',
-        text: '✕',
         attrs: { id: `strip-${id.toLowerCase()}`, type: 'button', 'aria-label': `Strip ${g.label} from the ClientHello` },
         on: { click: opts.onRemove },
       }),
