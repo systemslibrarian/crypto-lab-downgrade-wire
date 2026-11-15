@@ -3,7 +3,7 @@
 // Codepoints are the real IANA "TLS Supported Groups" values, so the wire bytes
 // shown in the demo are the bytes a real ClientHello would carry.
 //   x25519          = 0x001D   (RFC 7748 / RFC 9846)
-//   X25519MLKEM768  = 0x11EC   (draft-kwiatkowski-tls-ecdhe-mlkem, IANA 4588)
+//   X25519MLKEM768  = 0x11EC   (RFC 10024, formerly draft-kwiatkowski-tls-ecdhe-mlkem; IANA 4588)
 //   secp256r1       = 0x0017   (kept only for the historical rollback panel)
 
 import { u16 } from './bytes';

@@ -48,7 +48,7 @@ async function makeClientShare(id: GroupId): Promise<ClientShare> {
   }
   const mlkem = await generateMLKEMKeyPair();
   // Hybrid client share: ML-KEM-768 encapsulation key ‖ X25519 public key.
-  // draft-kwiatkowski-tls-ecdhe-mlkem puts the ML-KEM part first for
+  // RFC 10024 (formerly draft-kwiatkowski-tls-ecdhe-mlkem) puts the ML-KEM part first for
   // X25519MLKEM768 (and the ECDHE part first for SecP256r1MLKEM768).
   return { pub: concatBytes(mlkem.publicKey, x25519.publicKeyRaw), x25519, mlkem };
 }

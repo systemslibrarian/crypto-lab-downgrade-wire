@@ -104,7 +104,9 @@ the real key exchange and the real Finished verifier in your browser.
 
 TLS 1.3 (RFC 9846) is the negotiation and transcript binding modeled here; it is
 what protects the vast majority of HTTPS traffic. `X25519MLKEM768`
-(draft-kwiatkowski-tls-ecdhe-mlkem, IANA NamedGroup `0x11EC`) is the hybrid
+([RFC 10024](https://www.rfc-editor.org/info/rfc10024), August 2026, Proposed
+Standard — formerly draft-kwiatkowski-tls-ecdhe-mlkem / draft-ietf-tls-ecdhe-mlkem,
+verified 15 November 2026; IANA NamedGroup `0x11EC`) is the hybrid
 post-quantum group now being deployed across browsers and CDNs. The downgrade
 sentinel (RFC 9846 §4.2.3) ships in every TLS 1.3 stack. The historical attacks —
 FREAK, Logjam, POODLE — are why this binding exists.
