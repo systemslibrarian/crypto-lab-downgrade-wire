@@ -53,7 +53,7 @@ export function introPanel(): HTMLElement {
     h('p', { text:
       'Post-quantum migration adds a new, stronger option (a hybrid key exchange) alongside the old one. Both endpoints here support it. But if an attacker deletes that one line from the client’s list, the server never sees it was offered, and both sides settle for the weaker, classical-only option — each believing that was the best the other could do.' }),
     h('p', { class: 'honesty', text:
-      'The question this lab answers: can the attacker get away with it? That is decided entirely by one thing — whether the record of what was offered is cryptographically bound into the key that gets agreed. TLS 1.3 binds it. Older protocols did not, and that is the shape of FREAK, Logjam, and POODLE.' }),
+      'The question this lab answers: can the attacker get away with it? That is decided entirely by one thing — whether the record of what was offered is cryptographically bound into the key that gets agreed. TLS 1.3 binds it into the server’s signature and into every key. Older TLS bound it too, but weakly: its Finished message was a MAC over the whole handshake (RFC 5246 §7.4.9) computed with a key that came from the very exchange being downgraded, and the server signed its parameters without saying which option it had picked — so an attacker who could break the weak option in real time could forge the proof as well. That is what FREAK and Logjam did. POODLE never touched the negotiation: it attacked the client’s own retry at a lower version.' }),
   );
 }
 
@@ -85,7 +85,7 @@ export function stripPanel(): HTMLElement {
   const compareOut = h('div', { class: 'compare-out', attrs: { 'aria-live': 'polite' } });
 
   const bindingField = radioField('Transcript binding', 'binding', [
-    { value: 'unbound', label: 'Unbound (pre-TLS-1.3 model)', note: 'deliberately broken', checked: false },
+    { value: 'unbound', label: 'Unbound (teaching model, not a TLS version)', note: 'deliberately broken', checked: false },
     { value: 'bound', label: 'TLS 1.3 (transcript-bound)', note: 'the real default', checked: true },
   ], (v) => { binding = v === 'bound'; });
   const policyField = radioField('Server policy', 'policy', [
@@ -249,7 +249,7 @@ export function stripPanel(): HTMLElement {
     compareOut.append(
       h('h3', { class: 'compare-title', text: `Same strip, same policy (PQC ${policy}), two worlds` }),
       h('div', { class: 'compare-rail' },
-        ...[['Unbound (pre-TLS-1.3)', unbound], ['TLS 1.3 (transcript-bound)', bound]].map(([name, r]) =>
+        ...[['Unbound (teaching model)', unbound], ['TLS 1.3 (transcript-bound)', bound]].map(([name, r]) =>
           h('div', { class: 'compare-card' },
             h('h4', { text: name as string }),
             resultIndicator((r as Awaited<ReturnType<typeof runHandshake>>).crypto),
@@ -504,11 +504,11 @@ export function historicalPanel(): HTMLElement {
   return panel('history',
     h('h2', { text: 'The same shape, for thirty years' }),
     h('p', { class: 'panel-lede', text:
-      'Every one of these was a negotiation an attacker could edit before authentication kicked in. The primitive being downgraded changed; the mechanism did not.' }),
+      'In each one a weak option both sides could otherwise have avoided was still reachable. Two of the three got there by editing the negotiation before authentication kicked in; the third did not have to. The primitive being downgraded changed; the opportunity did not.' }),
     h('div', { class: 'hist-grid' },
-      card('FREAK', '2015', 'Forced clients to accept deliberately-weak 512-bit "export-grade" RSA key exchange that both sides could otherwise avoid. The strong option was stripped; the export option was factorable in hours.'),
-      card('Logjam', '2015', 'The Diffie–Hellman version of FREAK: downgraded the connection to export-grade 512-bit DH groups, whose parameters were precomputable. Same negotiation-before-authentication gap.'),
-      card('POODLE', '2014', 'Forced a rollback from TLS to SSL 3.0, whose CBC padding could be exploited byte by byte. This is the version-rollback threat the RFC 9846 sentinel was written to answer.'),
+      card('FREAK', '2015', 'A man-in-the-middle swapped the ciphersuite in both directions, so the server ran export RSA while the client believed it had agreed normal RSA. A state-machine bug in OpenSSL and SecureTransport then let the client accept the server’s 512-bit export key — factorable in hours, and often cached for days — which handed the attacker the master secret, and with it both Finished MACs. (Beurdouche et al., IEEE S&P 2015, §V-D.)'),
+      card('Logjam', '2015', 'A protocol flaw rather than an implementation bug: the server’s signature over its Diffie–Hellman parameters said nothing about which ciphersuite it had chosen, so a 512-bit DHE_EXPORT group could pass for an ordinary DHE choice. A week of precomputation per group, then about a minute per connection, and the attacker could finish the handshake itself. (Adrian et al., CCS 2015, §3.)'),
+      card('POODLE', '2014', 'Not a negotiation edit at all — SSL 3.0 version negotiation was authenticated. Many clients ran a "downgrade dance", retrying at a lower version whenever a handshake failed, so breaking the TLS attempts was enough to land on SSL 3.0, whose CBC padding was not covered by the MAC and served as a byte-at-a-time padding oracle. This is the version-rollback threat TLS_FALLBACK_SCSV and the RFC 9846 sentinel were written to answer. (Möller, Duong and Kotowicz, September 2014.)'),
     ),
     h('p', { class: 'honesty', text:
       'X25519MLKEM768 is the strong option today, and "harvest now, decrypt later" is the export-grade RSA of the quantum era — recorded traffic that only needs the attacker to wait. The defense is the same one TLS 1.3 already ships: bind the transcript.' }),

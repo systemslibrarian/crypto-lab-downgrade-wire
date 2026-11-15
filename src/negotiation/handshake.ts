@@ -85,7 +85,9 @@ export interface KexDetail {
   usedPQ: boolean;
 }
 
-// draft-ietf-tls-hybrid-design: the hybrid shared secret concatenates the two
+// RFC 9954, "Hybrid Key Exchange in TLS 1.3" (Stebila, Fluhrer and Gueron, July
+// 2026, Informational — formerly draft-ietf-tls-hybrid-design; verified
+// 15 November 2026): the hybrid shared secret concatenates the two
 // component secrets. The exact combiner/wire layout is the subject of the
 // sibling lab crypto-lab-hybrid-wire and is intentionally not taught here. The
 // server completes the exchange against the client's real key_share.
@@ -246,8 +248,9 @@ export async function runHandshake(config: HandshakeConfig): Promise<HandshakeRe
     }
   } else {
     // Deliberately-broken counterfactual: the agreed key does NOT depend on the
-    // offered list, and there is no Finished check. This is the shape of
-    // pre-TLS-1.3 negotiation, and it is never the default in the UI.
+    // offered list, and there is no Finished check. This matches no TLS version
+    // — TLS 1.2 and earlier do MAC the whole handshake in Finished (RFC 5246
+    // §7.4.9) — so it is a teaching model, and never the default in the UI.
     if (policyReject) {
       crypto_ = { kind: 'aborted', reason: 'policy-reject' };
       verdict = 'POLICY_DENIED';

@@ -62,16 +62,20 @@ counterfactual used to show what TLS 1.3 prevents.
 5. **Downgrade by denial of service** — transcript binding makes the strip fail
    *closed*, but a fail-open retry policy that drops PQ on error hands the attacker
    the downgrade anyway.
-6. **The same shape, for thirty years** — FREAK, Logjam, and POODLE as the same
-   negotiation-before-authentication pattern.
+6. **The same shape, for thirty years** — FREAK and Logjam as negotiation edits
+   landed before authentication, and POODLE as the version-rollback cousin that
+   went round the negotiation entirely.
 7. **What is real, and what this does not prove** — the honest scope boundary and
    the non-goals, each linking to the sibling lab that owns it.
 
 ## When to Use It
 
 - **Use it** to understand *why* TLS 1.3 resists downgrade where TLS 1.2 and SSL 3.0
-  did not, and to see that the answer is "the agreed key depends on everything that
-  was said," not "the protocol detects tampering."
+  did not. TLS 1.2 did bind the transcript — `Finished` is a MAC over every handshake
+  message from `ClientHello` on (RFC 5246 §7.4.9) — but its MAC key came from the
+  exchange being downgraded and its server signature did not cover the chosen
+  ciphersuite. TLS 1.3's answer is that the agreed key *and* the server's signature
+  both depend on everything that was said, not that "the protocol detects tampering."
 - **Use it** to explain to a team migrating to PQC that "PQC preferred" and "PQC
   required" are not the same threat model.
 - **Do NOT use it** as a TLS implementation, a downgrade scanner, or evidence that a
@@ -108,8 +112,11 @@ what protects the vast majority of HTTPS traffic. `X25519MLKEM768`
 Standard — formerly draft-kwiatkowski-tls-ecdhe-mlkem / draft-ietf-tls-ecdhe-mlkem,
 verified 15 November 2026; IANA NamedGroup `0x11EC`) is the hybrid
 post-quantum group now being deployed across browsers and CDNs. The downgrade
-sentinel (RFC 9846 §4.2.3) ships in every TLS 1.3 stack. The historical attacks —
-FREAK, Logjam, POODLE — are why this binding exists.
+sentinel (RFC 9846 §4.2.3) ships in every TLS 1.3 stack, where the RFC describes it
+as protection "over and above what is provided by the Finished exchange". The
+historical attacks are why these defenses exist: FREAK and Logjam, because a TLS 1.2
+server signature did not cover the option it had chosen; POODLE, because clients
+retried at lower versions, which is what `TLS_FALLBACK_SCSV` and the sentinel answer.
 
 ## How to Run Locally
 
