@@ -137,7 +137,7 @@ npm run test:a11y  # axe-core WCAG 2.1 A/AA gate (both themes)
 
 ## Build & Verify
 
-**33 tests across 6 files (Vitest), all passing**, including these known-answer tests:
+The Vitest suite includes these known-answer tests:
 
 - `src/negotiation/transcript.test.ts` — HKDF-Extract/Expand against **RFC 5869**
   Appendix A.1; `finished_key = HKDF-Expand-Label(traffic_secret, "finished", "",
@@ -170,8 +170,10 @@ Pages deploy is blocked if it (or the narrative gate) fails.
 
 ## Performance
 
-The full key exchange (X25519 + ML-KEM-768) plus the key schedule runs in a few
-milliseconds per handshake, entirely in the browser; no operation blocks the UI.
+The timing covers local browser computation for X25519, ML-KEM-768 and the key schedule.
+On a real connection, handshake latency also depends on round-trip time and how the key
+shares fit into network packets. Packet loss and retransmission can add delay. The lab
+models none of those network costs.
 
 ---
 
